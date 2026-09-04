@@ -9,7 +9,12 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "psql \"$DATABASE_URL\" -f db/seed.sql"
+    "db:seed": "node scripts/seed-db.mjs",
+    "db:verify": "bash scripts/verify-local-db.sh",
+    "db:up": "docker compose up -d postgres",
+    "db:stop": "docker compose stop postgres",
+    "db:status": "docker compose ps postgres",
+    "db:logs": "docker compose logs -f postgres"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

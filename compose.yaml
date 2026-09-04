@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: city-ikenbako-postgres
+    environment:
+      POSTGRES_USER: city_ikenbako
+      POSTGRES_PASSWORD: local-only-password
+      POSTGRES_DB: city_ikenbako
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - city_ikenbako_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U city_ikenbako -d city_ikenbako"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  city_ikenbako_postgres_data:
