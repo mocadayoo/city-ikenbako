@@ -22,10 +22,27 @@ export default function SubmitPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(null); setMessage(null); setIsSending(true);
     const form = new FormData(event.currentTarget);
-    const response = await fetch("/api/opinions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: form.get("email"), body: form.get("body"), title: form.get("title") || undefined, recipientId }) });
-    const result = await response.json(); setIsSending(false);
-    if (!response.ok) { setError(result.error?.message ?? "送信できませんでした。"); return; }
-    event.currentTarget.reset(); setMessage(`受付完了しました。受付ID: ${result.data.opinionId}`);
+    try {
+      const response = await fetch("/api/opinions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: form.get("email"), body: form.get("body"), title: form.get("title") || undefined, recipientId }) });
+      const result = await response.json();
+      if (!response.ok) {
+        const labels: Record<string, string> = { email: "メールアドレス", body: "意見本文", title: "タイトル", recipientId: "送信先", category: "カテゴリ", region: "地域" };
+        const fields = Array.isArray(result.fields)
+          ? result.fields.map((field: { path?: string }) => labels[field.path ?? ""] ?? field.path).join("、")
+          : "";
+        setError(fields ? `入力を確認してください：${fields}` : result.error?.message ?? "送信できませんでした。");
+        return;
+      }
+      event.currentTarget.reset();
+      const mailMessage = result.data.confirmationMailStatus === "MOCK_FAILED"
+        ? "確認用URLのコンソール出力に失敗しました。"
+        : "確認用URLは開発コンソールに出力されています。";
+      setMessage(`受付完了しました。受付ID: ${result.data.opinionId}。${mailMessage}`);
+    } catch {
+      setError("送信できませんでした。通信状態を確認してください。");
+    } finally {
+      setIsSending(false);
+    }
   }
 
   return (
