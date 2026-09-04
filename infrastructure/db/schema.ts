@@ -18,12 +18,16 @@ export const opinionEventType = pgEnum("opinion_event_type", [
   "SUBMITTED",
   "DELIVERED",
   "VIEWED",
+  "COMPLETED",
+  "DELETED",
+  "REOPENED",
 ]);
 export const opinionEventActorType = pgEnum("opinion_event_actor_type", [
   "SYSTEM",
   "COUNCILOR",
   "STAFF",
 ]);
+export const opinionStatus = pgEnum("opinion_status", ["OPEN", "COMPLETED", "DELETED"]);
 
 export const opinions = pgTable(
   "opinions",
@@ -33,6 +37,7 @@ export const opinions = pgTable(
     body: text("body").notNull(),
     category: text("category"),
     region: text("region"),
+    status: opinionStatus("status").default("OPEN").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [index("opinions_created_at_idx").on(table.createdAt)],
