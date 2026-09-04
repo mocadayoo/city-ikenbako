@@ -6,16 +6,37 @@ PostgreSQLの実データ、ダンプ、接続情報はリポジトリへ含め�
 
 ## Local PostgreSQL
 
-1. PostgreSQLで`city_ikenbako`データベースとアプリ用Roleを用意します。
-2. `.env.example`を`.env.local`へコピーし、`DATABASE_URL`と暗号鍵を設定します。
-3. Migrationとdev用アカウントを適用します。
+Docker Composeを使う場合は、Local PostgreSQLの起動・停止をpackage scriptから実行できます。
 
 ```bash
+npm run db:up
 npm run db:migrate
 npm run db:seed
 ```
 
-`db/seed.sql`にはdev用のCouncilorAccountが1件含まれます。実際のメール送信は行わず、投稿確認URLはNext.jsのサーバーコンソールへ出力します。
+停止・状態確認・ログ確認：
+
+```bash
+npm run db:stop
+npm run db:status
+npm run db:logs
+```
+
+`.env.example`を`.env.local`へコピーし、暗号鍵を設定します。
+
+`db:generate`、`db:migrate`、`db:seed`は`.env.local`の`DATABASE_URL`を読み込みます。接続先は`drizzle.config.ts`に記載せず、環境変数だけで管理します。
+
+PostgreSQLのデータはDockerのnamed volumeへ保存され、リポジトリには含まれません。意見の削除操作は関連データを含めてDBから完全に削除し、復元できません。
+
+Docker Desktopを起動できる環境では、実DBを残さない一時コンテナ検証も実行できます。
+
+```bash
+npm run db:verify
+```
+
+このコマンドはPostgreSQLコンテナを終了時に削除します。
+
+`db/seed.sql`にはdev用のCouncilorAccountが1件含まれます。`npm run db:seed`はNodeのPostgreSQLクライアントで実行するため、`psql`コマンドは不要です。実際のメール送信は行わず、投稿確認URLはNext.jsのサーバーコンソールへ出力します。
 
 ## Development
 
