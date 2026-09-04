@@ -1,69 +1,59 @@
-import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <main className="min-h-screen bg-[#f4f7f8] text-[#14212b]">
+      <header className="border-b border-[#d9e1e5] bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+          <Link href="/" className="flex items-center gap-3 font-semibold tracking-tight">
+            <span className="grid h-9 w-9 place-items-center rounded-md bg-[#0b6e69] text-white">CI</span>
+            <span>City Ikenbako</span>
+          </Link>
+          <Link href="/councilor/login" className="text-sm text-[#42616b] hover:text-[#0b6e69]">
+            市議・担当者ログイン
+          </Link>
+        </div>
+      </header>
+
+      <section className="mx-auto grid max-w-6xl gap-12 px-6 py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+        <div>
+          <p className="mb-5 text-sm font-semibold uppercase tracking-[0.22em] text-[#0b6e69]">Civic signal / 01</p>
+          <h1 className="max-w-2xl text-4xl font-semibold leading-tight tracking-tight sm:text-6xl">
+            まちへの声を、<br />届いた先まで見えるように。
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-7 max-w-xl text-lg leading-8 text-[#52636b]">
+            City Ikenbakoは、市民の意見を地域の担当者へ届け、送信と閲覧の事実を確認できる意見箱です。
           </p>
+          <Link href="/submit" className="mt-9 inline-flex rounded-md bg-[#0b6e69] px-6 py-3 font-medium text-white hover:bg-[#075852]">
+            意見を送る
+          </Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="relative min-h-72 overflow-hidden rounded-lg border border-[#cbdadd] bg-[#eaf1f1] p-6">
+          <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-[#9cb9b8]" />
+          <div className="absolute inset-y-0 left-1/2 border-l border-dashed border-[#9cb9b8]" />
+          <div className="relative grid h-full grid-cols-2 grid-rows-2 gap-8">
+            {[["01", "市民"], ["02", "地域"], ["03", "担当者"], ["04", "確認"]].map(([number, label]) => (
+              <div key={number} className="flex items-center gap-3 rounded-md border border-[#c3d4d4] bg-white/80 px-4 py-3">
+                <span className="text-xs font-semibold text-[#0b6e69]">{number}</span>
+                <span className="text-sm font-medium">{label}</span>
+              </div>
+            ))}
+          </div>
+          <p className="absolute bottom-4 right-5 text-xs tracking-wide text-[#63807f]">CONNECTED CITY / LOCAL NODE</p>
         </div>
-      </main>
-    </div>
+      </section>
+
+      <section className="border-t border-[#d9e1e5] bg-white">
+        <div className="mx-auto grid max-w-6xl gap-8 px-6 py-12 sm:grid-cols-3">
+          {[["送信", "入力した意見を安全に受け付けます。"], ["受信処理", "対象の担当者へ紐付いた事実を記録します。"], ["閲覧", "認証済みの担当者が見たことを知らせます。"]].map(([title, description]) => (
+            <div key={title} className="border-l-2 border-[#0b6e69] pl-4">
+              <h2 className="font-semibold">{title}</h2>
+              <p className="mt-2 text-sm leading-6 text-[#64747b]">{description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </main>
   );
 }
