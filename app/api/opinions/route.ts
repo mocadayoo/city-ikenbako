@@ -14,10 +14,12 @@ import { createOpaqueToken, hashOpaqueToken } from "../../../infrastructure/cryp
 import { sendOpinionAccessMail } from "../../../infrastructure/mail/mock-mail";
 import { toApiErrorResponse, ApiError } from "../../../shared/errors/api-error";
 
+const postgresUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const schema = z.object({
   email: z.string().email().max(320),
   body: z.string().trim().min(1).max(20_000),
-  recipientId: z.string().uuid(),
+  recipientId: z.string().regex(postgresUuid),
   title: z.string().trim().max(200).optional(),
   category: z.string().trim().max(100).optional(),
   region: z.string().trim().max(100).optional(),
@@ -76,12 +78,41 @@ export async function POST(request: Request) {
       return opinion;
     });
 
-    await sendOpinionAccessMail({ email: input.email, opinionId: result.id, rawToken });
-    return Response.json({ data: { opinionId: result.id, submittedAt: result.createdAt } }, { status: 201 });
+    let confirmationMailStatus: "MOCK_LOGGED" | "MOCK_FAILED" = "MOCK_LOGGED";
+    try {
+      await sendOpinionAccessMail({ email: input.email, opinionId: result.id, rawToken });
+    } catch (error) {
+      if (process.env.NODE_ENV !== "development") throw error;
+      // The opinion transaction has already committed. Do not make the citizen
+      // retry and create a duplicate only because the dev mail logger failed.
+      confirmationMailStatus = "MOCK_FAILED";
+      console.error("[mock-mail] failed after opinion acceptance", { opinionId: result.id });
+    }
+
+    return Response.json(
+      {
+        data: {
+          opinionId: result.id,
+          submittedAt: result.createdAt,
+          deliveryStatus: "DELIVERED",
+          confirmationMailStatus,
+        },
+      },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
+      // Keep diagnostics limited to field names and validator codes. Never log or
+      // return the submitted email/body because they may contain personal data.
+      const fields = error.issues.map((issue) => ({
+        path: issue.path.join(".") || "body",
+        code: issue.code,
+      }));
+      console.warn("[api/opinions] validation failed", fields);
+
+      const response = { error: { code: "VALIDATION_ERROR", message: "Input is invalid." } };
       return Response.json(
-        { error: { code: "VALIDATION_ERROR", message: "Input is invalid." } },
+        process.env.NODE_ENV === "development" ? { ...response, fields } : response,
         { status: 400 },
       );
     }

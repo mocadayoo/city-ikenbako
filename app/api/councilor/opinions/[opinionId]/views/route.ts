@@ -30,8 +30,15 @@ export async function POST(
       throw new ApiError("VIEW_NONCE_INVALID", 403, "View nonce is invalid or expired.");
     }
 
-    await recordCouncilorView(opinionId, principal);
-    return Response.json({ data: { viewed: true } });
+    const proof = await recordCouncilorView(opinionId, principal);
+    return Response.json({
+      data: {
+        viewed: true,
+        proofVersion: proof.proofVersion,
+        proofVerified: proof.proofVerified,
+        viewedAt: proof.occurredAt,
+      },
+    });
   } catch (error) {
     return toApiErrorResponse(error);
   }
