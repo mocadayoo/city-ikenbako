@@ -37,6 +37,7 @@ export async function POST(
         proofVersion: proof.proofVersion,
         proofVerified: proof.proofVerified,
         viewedAt: proof.occurredAt,
+        proof: proof.proof,
       },
     });
   } catch (error) {

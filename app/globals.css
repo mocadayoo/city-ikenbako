@@ -21,3 +21,31 @@ body {
 * { box-sizing: border-box; }
 
 button, input, textarea, select { font: inherit; }
+a, button:not(:disabled), select { cursor: pointer; }
+
+.back-mark {
+  position: relative;
+  display: inline-block;
+  width: 0.875rem;
+  height: 0.75rem;
+  flex: none;
+}
+
+.back-mark::before,
+.back-mark::after {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  content: "";
+  border-top: 1px solid currentColor;
+}
+
+.back-mark::before {
+  width: 100%;
+}
+
+.back-mark::after {
+  width: 0.45rem;
+  transform: rotate(-45deg);
+  transform-origin: left center;
+}

@@ -10,6 +10,7 @@ import {
 } from "../../infrastructure/db/schema";
 import {
   createViewNonce,
+  createViewProofPayload,
   createViewProof,
   verifyViewProof,
   VIEW_PROOF_VERSION,
@@ -18,6 +19,12 @@ import { ApiError } from "../../shared/errors/api-error";
 import type { CouncilorPrincipal } from "../councilor/councilor-session";
 
 export type OpinionStatus = "OPEN" | "COMPLETED" | "DELETED";
+type ViewProof = {
+  version: number;
+  payload: string;
+  signature: string;
+  verified: boolean;
+};
 
 export async function getOpinionForCitizen(opinionId: string) {
   const db = getDb();
@@ -181,13 +188,27 @@ function addViewProofStatus(
         signature: event.signature,
         proofVersion: event.proofVersion,
       }),
+    proof: event.type === "VIEWED" && event.actorId !== null && event.signature !== null && event.proofVersion !== null
+      ? {
+          version: event.proofVersion,
+          payload: createViewProofPayload(opinionId, event.actorId, event.occurredAt, event.proofVersion),
+          signature: event.signature,
+          verified: verifyViewProof({
+            opinionId,
+            accountId: event.actorId,
+            occurredAt: event.occurredAt,
+            signature: event.signature,
+            proofVersion: event.proofVersion,
+          }),
+        }
+      : undefined,
   }));
 }
 
 export async function recordCouncilorView(
   opinionId: string,
   principal: CouncilorPrincipal,
-): Promise<{ proofVersion: number; proofVerified: boolean; occurredAt: Date }> {
+): Promise<{ proofVersion: number; proofVerified: boolean; occurredAt: Date; proof?: ViewProof }> {
   if (!principal.permissions.includes("OPINION_READ_ALL")) {
     throw new ApiError("OPINION_FORBIDDEN", 403, "You cannot read this opinion.");
   }
@@ -203,6 +224,7 @@ export async function recordCouncilorView(
     .limit(1);
 
   const occurredAt = new Date();
+  const proofPayload = createViewProofPayload(opinionId, principal.accountId, occurredAt);
   const signature = createViewProof(opinionId, principal.accountId, occurredAt);
   const [inserted] = await db
     .insert(opinionEvents)
@@ -221,6 +243,7 @@ export async function recordCouncilorView(
         actorId: principal.accountId,
         occurredAt: occurredAt.toISOString(),
         proofVersion: VIEW_PROOF_VERSION,
+        signaturePayload: proofPayload,
       },
     })
     .onConflictDoNothing()
@@ -237,6 +260,18 @@ export async function recordCouncilorView(
         proofVersion: inserted.proofVersion,
       }),
       occurredAt,
+      proof: {
+        version: inserted.proofVersion,
+        payload: proofPayload,
+        signature: inserted.signature,
+        verified: verifyViewProof({
+          opinionId,
+          accountId: principal.accountId,
+          occurredAt,
+          signature: inserted.signature,
+          proofVersion: inserted.proofVersion,
+        }),
+      },
     };
   }
 
@@ -270,5 +305,13 @@ export async function recordCouncilorView(
     proofVersion: existing?.proofVersion ?? VIEW_PROOF_VERSION,
     proofVerified,
     occurredAt: existing?.occurredAt ?? occurredAt,
+    proof: existing?.signature && existing.proofVersion !== null
+      ? {
+          version: existing.proofVersion,
+          payload: createViewProofPayload(opinionId, principal.accountId, existing.occurredAt),
+          signature: existing.signature,
+          verified: proofVerified,
+        }
+      : undefined,
   };
 }

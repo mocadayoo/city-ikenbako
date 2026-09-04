@@ -43,11 +43,11 @@ export function verifyViewNonce(token: string, opinionId: string, accountId: str
   );
 }
 
-function createViewProofPayload(
+export function createViewProofPayload(
   opinionId: string,
   accountId: string,
   occurredAt: Date,
-  proofVersion: number,
+  proofVersion = VIEW_PROOF_VERSION,
 ): string {
   return ["view-proof", proofVersion, opinionId, accountId, occurredAt.toISOString()].join("|");
 }
