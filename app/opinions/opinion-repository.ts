@@ -1,6 +1,9 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { getDb } from "../../infrastructure/db/client";
 import {
+  opinionAccessSessions,
+  opinionAccessTokens,
+  opinionContacts,
   opinionEvents,
   opinionRecipients,
   opinions,
@@ -14,9 +17,15 @@ import {
 import { ApiError } from "../../shared/errors/api-error";
 import type { CouncilorPrincipal } from "../councilor/councilor-session";
 
+export type OpinionStatus = "OPEN" | "COMPLETED" | "DELETED";
+
 export async function getOpinionForCitizen(opinionId: string) {
   const db = getDb();
-  const [opinion] = await db.select().from(opinions).where(eq(opinions.id, opinionId)).limit(1);
+  const [opinion] = await db
+    .select()
+    .from(opinions)
+    .where(and(eq(opinions.id, opinionId), ne(opinions.status, "DELETED")))
+    .limit(1);
   if (!opinion) throw new ApiError("OPINION_NOT_FOUND", 404, "Opinion was not found.");
 
   const events = await db
@@ -42,6 +51,7 @@ export async function listOpinionsForCouncilor() {
       body: opinions.body,
       category: opinions.category,
       region: opinions.region,
+      status: opinions.status,
       createdAt: opinions.createdAt,
     })
     .from(opinions)
@@ -76,10 +86,81 @@ export async function getOpinionForCouncilor(opinionId: string, principal: Counc
   };
 }
 
+export async function updateOpinionStatus(
+  opinionId: string,
+  status: Exclude<OpinionStatus, "DELETED">,
+  principal: CouncilorPrincipal,
+): Promise<{ id: string; status: OpinionStatus }> {
+  if (!principal.permissions.includes("OPINION_MANAGE")) {
+    throw new ApiError("OPINION_FORBIDDEN", 403, "You cannot manage this opinion.");
+  }
+
+  const db = getDb();
+  return db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ id: opinions.id, status: opinions.status })
+      .from(opinions)
+      .where(eq(opinions.id, opinionId))
+      .limit(1);
+    if (!current) throw new ApiError("OPINION_NOT_FOUND", 404, "Opinion was not found.");
+
+    if (current.status === "DELETED") {
+      throw new ApiError("OPINION_DELETED", 409, "Deleted opinions cannot be reopened.");
+    }
+
+    if (current.status !== status) {
+      await tx.update(opinions).set({ status }).where(eq(opinions.id, opinionId));
+      await tx.insert(opinionEvents).values({
+        opinionId,
+        type: status === "COMPLETED" ? "COMPLETED" : "REOPENED",
+        actorType: principal.role,
+        actorId: principal.accountId,
+        payload: { eventType: status, opinionId, actorId: principal.accountId, status },
+      });
+    }
+
+    return { id: current.id, status };
+  });
+}
+
+export async function deleteOpinion(
+  opinionId: string,
+  principal: CouncilorPrincipal,
+): Promise<{ id: string }> {
+  if (!principal.permissions.includes("OPINION_MANAGE")) {
+    throw new ApiError("OPINION_FORBIDDEN", 403, "You cannot manage this opinion.");
+  }
+
+  const db = getDb();
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ id: opinions.id })
+      .from(opinions)
+      .where(eq(opinions.id, opinionId))
+      .limit(1);
+    if (!existing) throw new ApiError("OPINION_NOT_FOUND", 404, "Opinion was not found.");
+
+    // Foreign keys are RESTRICT by design. Delete dependent records explicitly
+    // in one transaction so a partial delete can never be committed.
+    await tx.delete(opinionEvents).where(eq(opinionEvents.opinionId, opinionId));
+    await tx.delete(opinionAccessSessions).where(eq(opinionAccessSessions.opinionId, opinionId));
+    await tx.delete(opinionAccessTokens).where(eq(opinionAccessTokens.opinionId, opinionId));
+    await tx.delete(opinionContacts).where(eq(opinionContacts.opinionId, opinionId));
+    await tx.delete(opinionRecipients).where(eq(opinionRecipients.opinionId, opinionId));
+    const [deleted] = await tx
+      .delete(opinions)
+      .where(eq(opinions.id, opinionId))
+      .returning({ id: opinions.id });
+
+    if (!deleted) throw new ApiError("OPINION_NOT_FOUND", 404, "Opinion was not found.");
+    return deleted;
+  });
+}
+
 function addViewProofStatus(
   opinionId: string,
   events: Array<{
-    type: "SUBMITTED" | "DELIVERED" | "VIEWED";
+    type: "SUBMITTED" | "DELIVERED" | "VIEWED" | "COMPLETED" | "DELETED" | "REOPENED";
     occurredAt: Date;
     actorId: string | null;
     signature: string | null;

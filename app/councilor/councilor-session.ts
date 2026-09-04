@@ -13,7 +13,7 @@ export type CouncilorPrincipal = {
   name: string;
   organization: string;
   role: "COUNCILOR" | "STAFF";
-  permissions: ["OPINION_READ_ALL"];
+  permissions: Array<"OPINION_READ_ALL" | "OPINION_MANAGE">;
 };
 
 export async function getCouncilorPrincipal(): Promise<CouncilorPrincipal> {
@@ -49,7 +49,7 @@ export async function getCouncilorPrincipal(): Promise<CouncilorPrincipal> {
     .set({ lastUsedAt: new Date() })
     .where(eq(councilorSessions.tokenHash, hashOpaqueToken(rawToken)));
 
-  return { ...row, permissions: ["OPINION_READ_ALL"] };
+  return { ...row, permissions: ["OPINION_READ_ALL", "OPINION_MANAGE"] };
 }
 
 export async function assertCouncilorCanReadAll(): Promise<CouncilorPrincipal> {

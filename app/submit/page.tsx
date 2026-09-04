@@ -21,7 +21,11 @@ export default function SubmitPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(null); setMessage(null); setIsSending(true);
-    const form = new FormData(event.currentTarget);
+    // React's event.currentTarget is only guaranteed during dispatch. Keep the
+    // form element before awaiting the request so a successful response cannot
+    // be turned into a client-side communication error by reset().
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     try {
       const response = await fetch("/api/opinions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: form.get("email"), body: form.get("body"), title: form.get("title") || undefined, recipientId }) });
       const result = await response.json();
@@ -33,7 +37,7 @@ export default function SubmitPage() {
         setError(fields ? `入力を確認してください：${fields}` : result.error?.message ?? "送信できませんでした。");
         return;
       }
-      event.currentTarget.reset();
+      formElement.reset();
       const mailMessage = result.data.confirmationMailStatus === "MOCK_FAILED"
         ? "確認用URLのコンソール出力に失敗しました。"
         : "確認用URLは開発コンソールに出力されています。";
