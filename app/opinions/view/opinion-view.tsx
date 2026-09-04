@@ -186,11 +186,6 @@ export function OpinionView({ audience }: { audience: Audience }) {
           )}
 
           {error && <p role="alert" className="rounded-md bg-[#fff1ef] p-4 text-sm text-[#a23b2f]">{error}</p>}
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[['送信', opinion.events.some((event) => event.type === 'SUBMITTED')], ['受信処理', opinion.events.some((event) => event.type === 'DELIVERED')], ['閲覧', viewed.length > 0]].map(([label, complete]) => (
-              <div key={String(label)} className="rounded-md border border-[#d9e1e5] bg-white p-4"><p className="text-xs text-[#64747b]">{label}</p><p className={`mt-2 font-semibold ${complete ? "text-[#0b6e69]" : "text-[#9aa8ad]"}`}>{complete ? "完了" : "未完了"}</p></div>
-            ))}
-          </div>
           {!isCouncilor && <Link href="/submit" className="inline-block text-sm text-[#0b6e69]">新しい意見を送る →</Link>}
         </section>
 
