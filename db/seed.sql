@@ -1,0 +1,7 @@
+INSERT INTO councilors (id, name, district, organization)
+VALUES ('00000000-0000-0000-0000-000000000001', '青木 まち子', '中央区', 'City Ikenbako 市議会')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO councilor_accounts (id, councilor_id, email, password_hash, role, is_enabled, email_verified_at)
+VALUES ('00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000001', 'dev-councilor@localhost', 'dev-only-mock-account', 'COUNCILOR', true, now())
+ON CONFLICT (id) DO NOTHING;
